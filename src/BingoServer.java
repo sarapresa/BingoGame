@@ -3,7 +3,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Servidor de Bingo que gere múltiplos clientes e coordena o jogos
+ * Servidor de Bingo que gere múltiplos clientes e coordena o jogo
  */
 public class BingoServer {
     private static final int PORTA = 12345;
