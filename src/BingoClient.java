@@ -176,6 +176,10 @@ public class BingoClient extends JFrame {
                 processarBingoOutros(mensagem);
             } else if (mensagem.equals("BINGO_INVALIDO")) {
                 processarBingoInvalido();
+            } else if (mensagem.startsWith("FIM_DE_JOGO:")) {
+                processarFimDeJogo(mensagem);
+            } else if (mensagem.startsWith("ERRO:")) {
+                processarErro(mensagem);
             }
             
             
@@ -326,6 +330,26 @@ private void desactivarBotoes() {
     botaoBingo.setEnabled(false);
     for (JButton botao : botoesCartao) {
         botao.setEnabled(false);
+    }
+}
+
+private void processarFimDeJogo(String mensagem) {
+    String razao = mensagem.substring("FIM_DE_JOGO:".length());
+    rotuloEstado.setText("Jogo terminado: " + razao);
+    JOptionPane.showMessageDialog(this, "Jogo terminado: " + razao,
+            "Fim de Jogo", JOptionPane.INFORMATION_MESSAGE);
+
+    desactivarBotoes();
+}
+
+private void processarErro(String mensagem) {
+    String erro = mensagem.substring("ERRO:".length());
+    rotuloEstado.setText("Erro: " + erro);
+    JOptionPane.showMessageDialog(this, erro, "Erro", JOptionPane.ERROR_MESSAGE);
+
+    if (erro.contains("Servidor lotado") || erro.contains("Jogo já em andamento") ||
+        erro.contains("Servidor está a parar")) {
+        desligar();
     }
 }
 
