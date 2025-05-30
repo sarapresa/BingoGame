@@ -129,12 +129,46 @@ public class BingoClient extends JFrame {
             String mensagem;
             while (ligado && (mensagem = entrada.readLine()) != null) {
                 System.out.println("Recebido: " + mensagem);
-                // TODO: Processar mensagens do servidor
+                processarMensagemServidor(mensagem);
             }
         } catch (IOException e) {
             if (ligado) {
                 SwingUtilities.invokeLater(() -> 
                     rotuloEstado.setText("Ligação perdida"));
+            }
+        }
+    }
+    
+    private void processarMensagemServidor(String mensagem) {
+        SwingUtilities.invokeLater(() -> {
+            if (mensagem.startsWith("CARTAO:")) {
+                processarCartaoRecebido(mensagem);
+            } else if (mensagem.startsWith("ERRO:")) {
+                String erro = mensagem.substring("ERRO:".length());
+                rotuloEstado.setText("Erro: " + erro);
+                JOptionPane.showMessageDialog(this, erro, "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+    }
+    
+    private void processarCartaoRecebido(String mensagem) {
+        String[] partes = mensagem.split(":", 3);
+        if (partes.length >= 3) {
+            idCartao = partes[1];
+            String[] numeros = partes[2].split(",");
+            
+            if (numeros.length == 25) {
+                for (int i = 0; i < 25; i++) {
+                    try {
+                        cartao[i] = Integer.parseInt(numeros[i].trim());
+                        botoesCartao[i].setText(String.valueOf(cartao[i]));
+                        botoesCartao[i].setEnabled(true);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Erro ao analisar número: " + numeros[i]);
+                    }
+                }
+                rotuloIdCartao.setText("ID do Cartão: " + idCartao);
+                rotuloEstado.setText("Cartão recebido! A aguardar outros jogadores...");
             }
         }
     }
