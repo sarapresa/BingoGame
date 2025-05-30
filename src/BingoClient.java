@@ -3,7 +3,8 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 
-
+import java.util.*;
+import java.util.List;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -33,6 +34,11 @@ public class BingoClient extends JFrame {
     private int[] cartao = new int[25];
     private boolean jogoIniciado = false;
     
+    private JPanel painelNumerosSorteados;
+    private List<JLabel> rotulosNumerosSorteados = new ArrayList<>();
+    private Set<Integer> numerosSorteados = new HashSet<>(); // Para controlar números já sorteados
+    private JScrollPane painelDeslizante;
+    
     public BingoClient() {
         inicializarInterface();
         ligarAoServidor();
@@ -56,8 +62,8 @@ public class BingoClient extends JFrame {
         rotuloIdCartao = new JLabel("ID do Cartão: N/A");
         JPanel painelId = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         painelId.add(rotuloIdCartao);
-        painelSuperior.add(painelId, BorderLayout.EAST);
-        add(painelSuperior, BorderLayout.NORTH);
+        painelSuperior.add(painelId, BorderLayout.NORTH); // Adicionar o painelId ao painelSuperior
+        add(painelSuperior, BorderLayout.NORTH); // Adicionar painelSuperior ao JFrame
         
         // Painel central com cartão
         JPanel painelCentral = new JPanel(new BorderLayout());
@@ -88,6 +94,14 @@ public class BingoClient extends JFrame {
         painelBotoes.add(botaoBingo);
         painelCentral.add(painelBotoes, BorderLayout.SOUTH);
         add(painelCentral, BorderLayout.CENTER);
+        
+        // Painel lateral com números sorteados (NOVO)
+        painelNumerosSorteados = new JPanel();
+        painelNumerosSorteados.setLayout(new BoxLayout(painelNumerosSorteados, BoxLayout.Y_AXIS));
+        painelNumerosSorteados.setBorder(BorderFactory.createTitledBorder("Números Sorteados"));
+        painelDeslizante = new JScrollPane(painelNumerosSorteados);
+        painelDeslizante.setPreferredSize(new Dimension(150, 0)); // Largura preferencial
+        add(painelDeslizante, BorderLayout.EAST); // Adiciona ao lado direito do JFrame
         
         rotuloEstado = new JLabel("A ligar ao servidor...", SwingConstants.CENTER);
         add(rotuloEstado, BorderLayout.SOUTH);
@@ -143,12 +157,60 @@ public class BingoClient extends JFrame {
         SwingUtilities.invokeLater(() -> {
             if (mensagem.startsWith("CARTAO:")) {
                 processarCartaoRecebido(mensagem);
+            } else if (mensagem.startsWith("JOGO_INICIADO:")) {
+                iniciarJogo();
+            } else if (mensagem.startsWith("NUMERO_SORTEADO:")) {
+                processarNumeroSorteado(mensagem);
             } else if (mensagem.startsWith("ERRO:")) {
                 String erro = mensagem.substring("ERRO:".length());
                 rotuloEstado.setText("Erro: " + erro);
                 JOptionPane.showMessageDialog(this, erro, "Erro", JOptionPane.ERROR_MESSAGE);
             }
         });
+    }
+    
+    private void iniciarJogo() {
+        jogoIniciado = true;
+        botaoLinha.setEnabled(true);
+        botaoBingo.setEnabled(true);
+        // O campoNome deve ser desativado uma vez que o jogo começa ou que o jogador está pronto
+        campoNome.setEnabled(false); 
+        rotuloEstado.setText("JOGO INICIADO! Boa sorte!");
+    }
+    
+    private void processarNumeroSorteado(String mensagem) {
+        try {
+            int numero = Integer.parseInt(mensagem.substring("NUMERO_SORTEADO:".length()).trim());
+            numerosSorteados.add(numero);
+            adicionarNumeroSorteado(numero);
+            rotuloEstado.setText("Último número sorteado: " + numero);
+            
+            // Opcional: Destacar número no cartão se ele existir lá e não estiver marcado
+            for (int i = 0; i < cartao.length; i++) {
+                if (cartao[i] == numero) {
+                    if (!numerosMarcados.contains(numero)) { // Apenas se não tiver sido marcado ainda
+                         // Pode-se mudar a cor temporariamente ou adicionar um efeito
+                         // Por agora, apenas atualizamos o estado, a marcação é manual pelo jogador
+                    }
+                }
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("Erro ao processar número sorteado: " + mensagem);
+        }
+    }
+    
+    private void adicionarNumeroSorteado(int numero) {
+        JLabel rotuloNumero = new JLabel(String.valueOf(numero));
+        rotuloNumero.setFont(new Font("Arial", Font.BOLD, 16));
+        rotuloNumero.setAlignmentX(Component.CENTER_ALIGNMENT); // Centrar o texto
+        painelNumerosSorteados.add(rotuloNumero);
+        rotulosNumerosSorteados.add(rotuloNumero); // Adiciona à lista para fácil referência/limpeza
+        painelNumerosSorteados.revalidate(); // Revalidar o painel para atualizar a UI
+        painelNumerosSorteados.repaint(); // Repintar o painel
+        
+        // Rola automaticamente para ver o último número sorteado
+        JScrollBar vertical = painelDeslizante.getVerticalScrollBar();
+        vertical.setValue(vertical.getMaximum());
     }
     
     private void processarCartaoRecebido(String mensagem) {
