@@ -25,6 +25,20 @@ public class BingoServer {
         jogoTerminado = false;
     }
     
+    private Random aleatorio = new Random();
+    
+    public synchronized int[] gerarCartao() {
+        Set<Integer> numerosCartao = new LinkedHashSet<>();
+        while (numerosCartao.size() < 25) {
+            numerosCartao.add(aleatorio.nextInt(99) + 1);
+        }
+        return numerosCartao.stream().mapToInt(Integer::intValue).toArray();
+    }
+    
+    public synchronized String gerarIdCartao() {
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
+    
     public void iniciar() {
         try {
             socketServidor = new ServerSocket(PORTA);

@@ -21,6 +21,10 @@ public class ClientHandler implements Runnable {
     private boolean pronto;
     private boolean ligado;
     
+    private String idCartao;
+    private int[] cartao;
+    private Set<Integer> numerosMarados = new HashSet<>();
+    
     public ClientHandler(Socket socket, BingoServer servidor) {
         this.socket = socket;
         this.servidor = servidor;
@@ -48,12 +52,39 @@ public class ClientHandler implements Runnable {
         }
     }
     
-    private void processarMensagem(String mensagem) {
+        private void processarMensagem(String mensagem) {
         if (mensagem.startsWith("PRONTO:")) {
             nome = mensagem.substring("PRONTO:".length()).trim();
+            if (nome.isEmpty()) {
+                enviarMensagem("ERRO:Nome não pode estar vazio.");
+                return;
+            }
+            
             pronto = true;
-            System.out.println("Cliente " + nome + " está pronto");
+            idCartao = servidor.gerarIdCartao();
+            cartao = servidor.gerarCartao();
+            servidor.registarCliente(this);
+            enviarCartao();
+            System.out.println("Cliente " + nome + " está pronto com cartão " + idCartao);
         }
+    }
+    
+    private void enviarCartao() {
+        StringBuilder sb = new StringBuilder("CARTAO:" + idCartao + ":");
+        for (int i = 0; i < cartao.length; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(cartao[i]);
+        }
+        enviarMensagem(sb.toString());
+        System.out.println("Cartão enviado para " + nome);
+    }
+    
+    public int[] obterCartao() {
+        return cartao != null ? cartao.clone() : new int[0];
+    }
+    
+    public Set<Integer> obterNumerosMarados() {
+        return new HashSet<>(numerosMarados);
     }
     
     public void enviarMensagem(String mensagem) {
