@@ -5,6 +5,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Servidor de Bingo que gere múltiplos clientes e coordena o jogo
@@ -18,11 +19,18 @@ public class BingoServer {
     private List<ClientHandler> clientes;
     private boolean jogoIniciado;
     private boolean jogoTerminado;
+    private static final int INTERVALO_SORTEIO = 10000; // 10 segundos
+    private Set<Integer> numerosSorteados;
+    private List<Integer> historicoPorNum;
+    private Timer temporizadorSorteio;
     
     public BingoServer() {
         clientes = Collections.synchronizedList(new ArrayList<>());
+        numerosSorteados = Collections.synchronizedSet(new HashSet<>());
+        historicoPorNum = Collections.synchronizedList(new ArrayList<>());
         jogoIniciado = false;
         jogoTerminado = false;
+        aleatorio = new Random();
     }
     
     private Random aleatorio = new Random();
@@ -35,7 +43,7 @@ public class BingoServer {
         return numerosCartao.stream().mapToInt(Integer::intValue).toArray();
     }
     
-    public synchronized String gerarIdCartao() {
+    public synchronized String gerarIdCartao() { 
         return UUID.randomUUID().toString().substring(0, 8);
     }
     
@@ -114,10 +122,56 @@ public class BingoServer {
         }
     }
     
-    private void iniciarJogo() {
+       private void iniciarJogo() {
         jogoIniciado = true;
         System.out.println("Todos os jogadores estão prontos! O jogo vai começar.");
         enviarMensagemTodos("JOGO_INICIADO:O jogo começou! Boa sorte!");
+        
+        temporizadorSorteio = new Timer();
+        temporizadorSorteio.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                if (!jogoTerminado) {
+                    sortearNumero();
+                } else {
+                    this.cancel();
+                }
+            }
+        }, 5000, INTERVALO_SORTEIO);
+    }
+    
+    private synchronized void sortearNumero() {
+        if (jogoTerminado) return;
+        
+        if (numerosSorteados.size() >= 99) {
+            enviarMensagemTodos("FIM_DE_JOGO:Todos os números foram sorteados.");
+            terminarJogo("Todos os números sorteados");
+            return;
+        }
+        
+        int numeroSorteado;
+        do {
+            numeroSorteado = aleatorio.nextInt(99) + 1;
+        } while (numerosSorteados.contains(numeroSorteado));
+        
+        numerosSorteados.add(numeroSorteado);
+        historicoPorNum.add(numeroSorteado);
+        
+        System.out.println("Número sorteado: " + numeroSorteado);
+        enviarMensagemTodos("NUMERO_SORTEADO:" + numeroSorteado);
+    }
+    
+    public Set<Integer> obterNumerosSorteados() {
+        return new HashSet<>(numerosSorteados);
+    }
+    
+    private void terminarJogo(String razao) {
+        jogoTerminado = true;
+        if (temporizadorSorteio != null) {
+            temporizadorSorteio.cancel();
+            temporizadorSorteio.purge();
+        }
+        System.out.println("Jogo terminado: " + razao);
     }
     
     public synchronized void enviarMensagemTodos(String mensagem) {
