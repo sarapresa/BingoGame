@@ -166,7 +166,13 @@ public class BingoClient extends JFrame {
                 String erro = mensagem.substring("ERRO:".length());
                 rotuloEstado.setText("Erro: " + erro);
                 JOptionPane.showMessageDialog(this, erro, "Erro", JOptionPane.ERROR_MESSAGE);
-            }
+            } else if (mensagem.startsWith("LINHA_VALIDA:")) {
+                processarLinhaValida(mensagem);
+            } else if (mensagem.equals("LINHA_INVALIDA")) {
+                processarLinhaInvalida();
+}
+            
+            
         });
     }
     
@@ -278,6 +284,19 @@ public class BingoClient extends JFrame {
         }
     }
 }
+    
+   private void processarLinhaValida(String mensagem) {
+    String jogador = mensagem.substring("LINHA_VALIDA:".length());
+    rotuloEstado.setText("LINHA VÁLIDA feita por: " + jogador);
+    JOptionPane.showMessageDialog(this, jogador + " fez uma linha válida!", 
+        "Linha!", JOptionPane.INFORMATION_MESSAGE);
+}
+
+private void processarLinhaInvalida() {
+    rotuloEstado.setText("Linha inválida! Continue a jogar.");
+    JOptionPane.showMessageDialog(this, "A sua linha não é válida. Continue a jogar!", 
+        "Linha Inválida", JOptionPane.WARNING_MESSAGE);
+} 
     
     private void enviarMensagem(String mensagem) {
         if (saida != null && ligado) {
