@@ -291,6 +291,38 @@ public class BingoClient extends JFrame {
     JOptionPane.showMessageDialog(this, jogador + " fez uma linha válida!", 
         "Linha!", JOptionPane.INFORMATION_MESSAGE);
 }
+   
+   private void processarBingoValido() {
+    rotuloEstado.setText("PARABÉNS! Ganhou o BINGO!");
+    JOptionPane.showMessageDialog(this, "PARABÉNS! Fez BINGO e ganhou o jogo!",
+            "BINGO!", JOptionPane.INFORMATION_MESSAGE);
+
+    desactivarBotoes();
+}
+
+private void processarBingoOutros(String mensagem) {
+    String vencedor = mensagem.substring("BINGO_OUTROS:".length());
+    rotuloEstado.setText("Jogo terminado. Vencedor: " + vencedor);
+    JOptionPane.showMessageDialog(this, vencedor + " fez BINGO e ganhou o jogo!",
+            "Jogo Terminado", JOptionPane.INFORMATION_MESSAGE);
+
+    desactivarBotoes();
+}
+
+private void processarBingoInvalido() {
+    rotuloEstado.setText("BINGO inválido! Continue a jogar.");
+    JOptionPane.showMessageDialog(this, "O seu BINGO não é válido. Continue a jogar!",
+            "BINGO Inválido", JOptionPane.WARNING_MESSAGE);
+}
+
+private void desactivarBotoes() {
+    botaoLinha.setEnabled(false);
+    botaoBingo.setEnabled(false);
+    for (JButton botao : botoesCartao) {
+        botao.setEnabled(false);
+    }
+}
+
 
 private void processarLinhaInvalida() {
     rotuloEstado.setText("Linha inválida! Continue a jogar.");
