@@ -170,7 +170,13 @@ public class BingoClient extends JFrame {
                 processarLinhaValida(mensagem);
             } else if (mensagem.equals("LINHA_INVALIDA")) {
                 processarLinhaInvalida();
-}
+            } else if (mensagem.equals("BINGO_VALIDO")) {
+                processarBingoValido();
+            } else if (mensagem.startsWith("BINGO_OUTROS:")) {
+                processarBingoOutros(mensagem);
+            } else if (mensagem.equals("BINGO_INVALIDO")) {
+                processarBingoInvalido();
+            }
             
             
         });
