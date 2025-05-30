@@ -90,7 +90,46 @@ public class BingoServer {
         clientes.remove(cliente);
         System.out.println("Cliente desligado. Total: " + clientes.size());
     }
+    public synchronized void verificarTodosProntos() {
+        if (jogoIniciado || jogoTerminado) {
+            return;
+        }
+        
+        if (clientes.size() < MIN_JOGADORES) {
+            System.out.println("A aguardar mais jogadores. Atual: " + clientes.size() + "/" + MIN_JOGADORES);
+            return;
+        }
+        
+        int jogadoresProntos = 0;
+        for (ClientHandler cliente : clientes) {
+            if (cliente.estaPronto()) {
+                jogadoresProntos++;
+            }
+        }
+        
+        System.out.println("Jogadores prontos: " + jogadoresProntos + "/" + clientes.size());
+        
+        if (jogadoresProntos >= MIN_JOGADORES && jogadoresProntos == clientes.size()) {
+            iniciarJogo();
+        }
+    }
     
+    private void iniciarJogo() {
+        jogoIniciado = true;
+        System.out.println("Todos os jogadores estão prontos! O jogo vai começar.");
+        enviarMensagemTodos("JOGO_INICIADO:O jogo começou! Boa sorte!");
+    }
+    
+    public synchronized void enviarMensagemTodos(String mensagem) {
+        List<ClientHandler> clientesCopia = new ArrayList<>(clientes);
+        for (ClientHandler cliente : clientesCopia) {
+            try {
+                cliente.enviarMensagem(mensagem);
+            } catch (Exception e) {
+                System.err.println("Erro ao enviar mensagem: " + e.getMessage());
+            }
+        }
+    }
     public static void main(String[] args) {
         BingoServer servidor = new BingoServer();
         servidor.iniciar();

@@ -65,6 +65,7 @@ public class ClientHandler implements Runnable {
             cartao = servidor.gerarCartao();
             servidor.registarCliente(this);
             enviarCartao();
+            servidor.verificarTodosProntos();
             System.out.println("Cliente " + nome + " está pronto com cartão " + idCartao);
         }
     }
