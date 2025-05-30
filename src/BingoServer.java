@@ -241,6 +241,33 @@ public class BingoServer {
     }
 }
     
+    public synchronized void processarBingo(ClientHandler cliente) {
+    // Verificações básicas de estado do jogo
+    if (jogoTerminado) {
+        cliente.enviarMensagem("ERRO:O jogo já terminou.");
+        return;
+    }
+
+    if (!jogoIniciado) {
+        cliente.enviarMensagem("ERRO:O jogo ainda não começou.");
+        return;
+    }
+
+    System.out.println("A processar pedido de BINGO de " + cliente.obterNome());
+    
+    // Valida o bingo do jogador
+    if (validarBingo(cliente.obterCartao(), cliente.obterNumerosMarados(), numerosSorteados)) {
+        System.out.println("BINGO VÁLIDO para " + cliente.obterNome());
+        cliente.enviarMensagem("BINGO_VALIDO");
+        enviarMensagemParaOutros("BINGO_OUTROS:" + cliente.obterNome(), cliente);
+        terminarJogo("Bingo feito por " + cliente.obterNome());
+    } else {
+        System.out.println("BINGO INVÁLIDO para " + cliente.obterNome());
+        cliente.enviarMensagem("BINGO_INVALIDO");
+    }
+}
+    
+    
     public synchronized void enviarMensagemTodos(String mensagem) {
         List<ClientHandler> clientesCopia = new ArrayList<>(clientes);
         for (ClientHandler cliente : clientesCopia) {
@@ -251,8 +278,23 @@ public class BingoServer {
             }
         }
     }
+    
+    private boolean validarBingo(int[] cartao, Set<Integer> numerosMarados, Set<Integer> numerosSorteadosNoJogo) {
+    for (int numeroNoCartao : cartao) {
+        // Verifica se TODOS os números estão marcados pelo jogador E foram sorteados
+        if (!numerosMarados.contains(numeroNoCartao) || !numerosSorteadosNoJogo.contains(numeroNoCartao)) {
+            return false;
+        }
+    }
+    return true;
+}
+    
     public static void main(String[] args) {
         BingoServer servidor = new BingoServer();
         servidor.iniciar();
+    }
+
+    private void enviarMensagemParaOutros(String string, ClientHandler cliente) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
