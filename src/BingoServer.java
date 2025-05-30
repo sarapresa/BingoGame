@@ -165,15 +165,6 @@ public class BingoServer {
         return new HashSet<>(numerosSorteados);
     }
     
-    private void terminarJogo(String razao) {
-        jogoTerminado = true;
-        if (temporizadorSorteio != null) {
-            temporizadorSorteio.cancel();
-            temporizadorSorteio.purge();
-        }
-        System.out.println("Jogo terminado: " + razao);
-       
-    }
     
     private boolean validarLinha(int[] cartao, Set<Integer> numerosMarados, Set<Integer> numerosSorteadosNoJogo) {
     // Verifica linhas horizontais (5 linhas de 5 números cada)
@@ -287,6 +278,15 @@ public class BingoServer {
         }
     }
     return true;
+}
+    private void terminarJogo(String razao) {
+    jogoTerminado = true;
+    if (temporizadorSorteio != null) {
+        temporizadorSorteio.cancel();
+        temporizadorSorteio.purge();
+        temporizadorSorteio = null;
+    }
+    System.out.println("Jogo terminado: " + razao);
 }
     
     public static void main(String[] args) {
