@@ -24,6 +24,11 @@ public class BingoClient extends JFrame {
     private JLabel rotuloEstado, rotuloIdCartao;
     private JPanel painelCartao;
     private JButton[] botoesCartao = new JButton[25];
+    private JPanel painelNumerosSorteados;
+    private List<JLabel> rotulosNumerosSorteados = new ArrayList<>();
+    private Set<Integer> numerosSorteados = new HashSet<>();
+    private JScrollPane painelDeslizante;
+    
     
     private Socket socket;
     private BufferedReader entrada;
@@ -32,12 +37,10 @@ public class BingoClient extends JFrame {
     
     private String idCartao;
     private int[] cartao = new int[25];
+    private Set<Integer> numerosMarcados = new HashSet<>();
     private boolean jogoIniciado = false;
     
-    private JPanel painelNumerosSorteados;
-    private List<JLabel> rotulosNumerosSorteados = new ArrayList<>();
-    private Set<Integer> numerosSorteados = new HashSet<>(); // Para controlar números já sorteados
-    private JScrollPane painelDeslizante;
+    
     
     public BingoClient() {
         inicializarInterface();
@@ -62,8 +65,8 @@ public class BingoClient extends JFrame {
         rotuloIdCartao = new JLabel("ID do Cartão: N/A");
         JPanel painelId = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         painelId.add(rotuloIdCartao);
-        painelSuperior.add(painelId, BorderLayout.NORTH); // Adicionar o painelId ao painelSuperior
-        add(painelSuperior, BorderLayout.NORTH); // Adicionar painelSuperior ao JFrame
+        painelSuperior.add(painelId, BorderLayout.EAST); 
+        add(painelSuperior, BorderLayout.NORTH); 
         
         // Painel central com cartão
         JPanel painelCentral = new JPanel(new BorderLayout());
@@ -95,13 +98,14 @@ public class BingoClient extends JFrame {
         painelCentral.add(painelBotoes, BorderLayout.SOUTH);
         add(painelCentral, BorderLayout.CENTER);
         
-        // Painel lateral com números sorteados (NOVO)
         painelNumerosSorteados = new JPanel();
         painelNumerosSorteados.setLayout(new BoxLayout(painelNumerosSorteados, BoxLayout.Y_AXIS));
         painelNumerosSorteados.setBorder(BorderFactory.createTitledBorder("Números Sorteados"));
         painelDeslizante = new JScrollPane(painelNumerosSorteados);
-        painelDeslizante.setPreferredSize(new Dimension(150, 0)); // Largura preferencial
-        add(painelDeslizante, BorderLayout.EAST); // Adiciona ao lado direito do JFrame
+        painelDeslizante.setPreferredSize(new Dimension(150, 0));
+        painelDeslizante.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        painelDeslizante.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        add(painelDeslizante, BorderLayout.EAST);
         
         rotuloEstado = new JLabel("A ligar ao servidor...", SwingConstants.CENTER);
         add(rotuloEstado, BorderLayout.SOUTH);
@@ -157,10 +161,7 @@ public class BingoClient extends JFrame {
         SwingUtilities.invokeLater(() -> {
             if (mensagem.startsWith("CARTAO:")) {
                 processarCartaoRecebido(mensagem);
-            } else if (mensagem.startsWith("JOGO_INICIADO:")) {
-                iniciarJogo();
-            } else if (mensagem.startsWith("NUMERO_SORTEADO:")) {
-                processarNumeroSorteado(mensagem);
+          
             } else if (mensagem.startsWith("ERRO:")) {
                 String erro = mensagem.substring("ERRO:".length());
                 rotuloEstado.setText("Erro: " + erro);
@@ -169,49 +170,6 @@ public class BingoClient extends JFrame {
         });
     }
     
-    private void iniciarJogo() {
-        jogoIniciado = true;
-        botaoLinha.setEnabled(true);
-        botaoBingo.setEnabled(true);
-        // O campoNome deve ser desativado uma vez que o jogo começa ou que o jogador está pronto
-        campoNome.setEnabled(false); 
-        rotuloEstado.setText("JOGO INICIADO! Boa sorte!");
-    }
-    
-    private void processarNumeroSorteado(String mensagem) {
-        try {
-            int numero = Integer.parseInt(mensagem.substring("NUMERO_SORTEADO:".length()).trim());
-            numerosSorteados.add(numero);
-            adicionarNumeroSorteado(numero);
-            rotuloEstado.setText("Último número sorteado: " + numero);
-            
-            // Opcional: Destacar número no cartão se ele existir lá e não estiver marcado
-            for (int i = 0; i < cartao.length; i++) {
-                if (cartao[i] == numero) {
-                    if (!numerosMarcados.contains(numero)) { // Apenas se não tiver sido marcado ainda
-                         // Pode-se mudar a cor temporariamente ou adicionar um efeito
-                         // Por agora, apenas atualizamos o estado, a marcação é manual pelo jogador
-                    }
-                }
-            }
-        } catch (NumberFormatException e) {
-            System.err.println("Erro ao processar número sorteado: " + mensagem);
-        }
-    }
-    
-    private void adicionarNumeroSorteado(int numero) {
-        JLabel rotuloNumero = new JLabel(String.valueOf(numero));
-        rotuloNumero.setFont(new Font("Arial", Font.BOLD, 16));
-        rotuloNumero.setAlignmentX(Component.CENTER_ALIGNMENT); // Centrar o texto
-        painelNumerosSorteados.add(rotuloNumero);
-        rotulosNumerosSorteados.add(rotuloNumero); // Adiciona à lista para fácil referência/limpeza
-        painelNumerosSorteados.revalidate(); // Revalidar o painel para atualizar a UI
-        painelNumerosSorteados.repaint(); // Repintar o painel
-        
-        // Rola automaticamente para ver o último número sorteado
-        JScrollBar vertical = painelDeslizante.getVerticalScrollBar();
-        vertical.setValue(vertical.getMaximum());
-    }
     
     private void processarCartaoRecebido(String mensagem) {
         String[] partes = mensagem.split(":", 3);
@@ -234,6 +192,92 @@ public class BingoClient extends JFrame {
             }
         }
     }
+    
+    private void processarNumeroSorteado(String mensagem) {
+    try {
+        int numero = Integer.parseInt(mensagem.substring("NUMERO_SORTEADO:".length()));
+        numerosSorteados.add(numero);
+        adicionarNumeroSorteado(numero);
+        destacarSeNoCartao(numero);
+        rotuloEstado.setText("Último número sorteado: " + numero);
+    } catch (NumberFormatException e) {
+        System.err.println("Erro ao analisar número sorteado: " + mensagem);
+    }
+}
+    
+    private void adicionarNumeroSorteado(int numero) {
+    // Remove destaque do número anterior
+    if (!rotulosNumerosSorteados.isEmpty()) {
+        JLabel ultimoRotulo = rotulosNumerosSorteados.get(rotulosNumerosSorteados.size() - 1);
+        ultimoRotulo.setFont(new Font("Arial", Font.PLAIN, 14));
+    }
+    
+    // Criar novo rótulo para o número actual
+    JLabel rotuloNumero = new JLabel(String.valueOf(numero));
+    rotuloNumero.setFont(new Font("Arial", Font.BOLD, 16));
+    rotuloNumero.setHorizontalAlignment(SwingConstants.CENTER);
+    rotuloNumero.setBorder(BorderFactory.createEmptyBorder(3, 8, 3, 8));
+    
+    rotulosNumerosSorteados.add(rotuloNumero);
+    painelNumerosSorteados.add(rotuloNumero);
+    
+    SwingUtilities.invokeLater(() -> {
+        painelNumerosSorteados.revalidate();
+        painelNumerosSorteados.repaint();
+        
+        // Garantir que o scroll vai para o final
+        JScrollBar vertical = painelDeslizante.getVerticalScrollBar();
+        vertical.setValue(vertical.getMaximum());
+        
+        rotuloNumero.scrollRectToVisible(rotuloNumero.getBounds());
+    });
+}
+    
+    private void alternarMarcacaoNumero(int indice) {
+    if (!jogoIniciado) {
+        rotuloEstado.setText("Aguarde o jogo começar para marcar números!");
+        return;
+    }
+
+    int numero = cartao[indice];
+    
+    if (numerosMarcados.contains(numero)) {
+        // Desmarcar número
+        numerosMarcados.remove(numero);
+        botoesCartao[indice].setBackground(numerosSorteados.contains(numero) ? Color.YELLOW : Color.WHITE);
+        botoesCartao[indice].setBorderPainted(true);
+        botoesCartao[indice].repaint();
+        enviarMensagem("DESMARCAR:" + numero);
+    } else {
+        // Marcar número apenas se foi sorteado
+        if (numerosSorteados.contains(numero)) {
+            numerosMarcados.add(numero);
+            botoesCartao[indice].setBackground(Color.GREEN);
+            botoesCartao[indice].setOpaque(true);
+            botoesCartao[indice].setBorderPainted(false);
+            botoesCartao[indice].repaint();
+            enviarMensagem("MARCAR:" + numero);
+        } else {
+            rotuloEstado.setText("Só pode marcar números que já foram sorteados!");
+            JOptionPane.showMessageDialog(this, 
+                "O número " + numero + " ainda não foi sorteado!", 
+                "Número não sorteado", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+}
+    
+    private void destacarSeNoCartao(int numero) {
+    for (int i = 0; i < 25; i++) {
+        if (cartao[i] == numero) {
+            if (!numerosMarcados.contains(numero)) {
+                botoesCartao[i].setBackground(Color.YELLOW);
+                botoesCartao[i].setOpaque(true);
+                botoesCartao[i].setBorderPainted(true);
+            }
+            break;
+        }
+    }
+}
     
     private void enviarMensagem(String mensagem) {
         if (saida != null && ligado) {

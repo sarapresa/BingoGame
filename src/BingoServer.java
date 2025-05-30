@@ -172,7 +172,74 @@ public class BingoServer {
             temporizadorSorteio.purge();
         }
         System.out.println("Jogo terminado: " + razao);
+       
     }
+    
+    private boolean validarLinha(int[] cartao, Set<Integer> numerosMarados, Set<Integer> numerosSorteadosNoJogo) {
+    // Verifica linhas horizontais (5 linhas de 5 números cada)
+    for (int linha = 0; linha < 5; linha++) {
+        boolean linhaCompleta = true;
+        for (int coluna = 0; coluna < 5; coluna++) {
+            int indice = linha * 5 + coluna;
+            int numeroNoCartao = cartao[indice];
+            
+            // Verifica se o número está marcado pelo jogador E foi sorteado
+            if (!numerosMarados.contains(numeroNoCartao) || !numerosSorteadosNoJogo.contains(numeroNoCartao)) {
+                linhaCompleta = false;
+                break;
+            }
+        }
+        if (linhaCompleta) {
+            System.out.println("Linha horizontal " + (linha + 1) + " completa!");
+            return true;
+        }
+    }
+
+    // Verifica linhas verticais (5 colunas de 5 números cada)
+    for (int coluna = 0; coluna < 5; coluna++) {
+        boolean colunaCompleta = true;
+        for (int linha = 0; linha < 5; linha++) {
+            int indice = linha * 5 + coluna;
+            int numeroNoCartao = cartao[indice];
+            
+            // Verifica se o número está marcado pelo jogador E foi sorteado
+            if (!numerosMarados.contains(numeroNoCartao) || !numerosSorteadosNoJogo.contains(numeroNoCartao)) {
+                colunaCompleta = false;
+                break;
+            }
+        }
+        if (colunaCompleta) {
+            System.out.println("Linha vertical " + (coluna + 1) + " completa!");
+            return true;
+        }
+    }
+
+    return false;
+}
+    
+    public synchronized void processarLinha(ClientHandler cliente) {
+    // Verificações básicas de estado do jogo
+    if (jogoTerminado) {
+        cliente.enviarMensagem("ERRO:O jogo já terminou.");
+        return;
+    }
+
+    if (!jogoIniciado) {
+        cliente.enviarMensagem("ERRO:O jogo ainda não começou.");
+        return;
+    }
+
+    System.out.println("A processar pedido de LINHA de " + cliente.obterNome());
+    
+    // Valida a linha do jogador
+    if (validarLinha(cliente.obterCartao(), cliente.obterNumerosMarados(), numerosSorteados)) {
+        System.out.println("LINHA VÁLIDA para " + cliente.obterNome());
+        enviarMensagemTodos("LINHA_VALIDA:" + cliente.obterNome());
+    } else {
+        System.out.println("LINHA INVÁLIDA para " + cliente.obterNome());
+        cliente.enviarMensagem("LINHA_INVALIDA");
+    }
+}
     
     public synchronized void enviarMensagemTodos(String mensagem) {
         List<ClientHandler> clientesCopia = new ArrayList<>(clientes);

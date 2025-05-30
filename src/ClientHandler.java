@@ -69,6 +69,37 @@ public class ClientHandler implements Runnable {
             System.out.println("Cliente " + nome + " está pronto com cartão " + idCartao);
         }
     }
+        
+        private void marcarNumero(int numero) {
+    // Verifica se o número está no cartão do jogador
+    boolean numeroNoCartao = false;
+    for (int num : cartao) {
+        if (num == numero) {
+            numeroNoCartao = true;
+            break;
+        }
+    }
+    
+    if (!numeroNoCartao) {
+        enviarMensagem("ERRO:Número " + numero + " não está no seu cartão.");
+        return;
+    }
+    
+    // Verifica se o número foi sorteado pelo servidor
+    if (!servidor.obterNumerosSorteados().contains(numero)) {
+        enviarMensagem("ERRO:Número " + numero + " ainda não foi sorteado.");
+        return;
+    }
+    
+    // Marca o número
+    numerosMarados.add(numero);
+    System.out.println("Jogador " + nome + " marcou número " + numero);
+}
+
+private void desmarcarNumero(int numero) {
+    numerosMarados.remove(numero);
+    System.out.println("Jogador " + nome + " desmarcou número " + numero);
+}
     
     private void enviarCartao() {
         StringBuilder sb = new StringBuilder("CARTAO:" + idCartao + ":");
